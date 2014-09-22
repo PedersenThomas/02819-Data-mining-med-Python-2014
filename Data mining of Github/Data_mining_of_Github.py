@@ -1,2 +1,2 @@
-#Authers. Kim KNutzen & Thomas Pedersen
+#Authers. Kim Knutzen & Thomas Pedersen
 print('Hello Python World')

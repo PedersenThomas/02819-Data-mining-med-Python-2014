@@ -4,9 +4,18 @@ print('Hello Python World')
 import requests
 import json
 import pprint
+from pymongo import MongoClient
 
-content = json.loads(requests.get("https://api.github.com/events", headers={'User-Agent': "kknutzen/1.0"}).content)
+db = MongoClient('mongodb://python:python@www.k-development.dk/local').local
 
-#pp = pprint.PrettyPrinter(indent = 1)
-#pp.pprint(content)
-print json.dumps(content, indent=2)
+for _ in range(20):
+    print "-------------------------------------------------------"
+    content = json.loads(requests.get("https://api.github.com/events", headers={'User-Agent': "kknutzen/1.0"}, auth=requests.auth.HTTPBasicAuth('user', 'password')).content)
+    for data in content:
+        obj = next(db.github.find({'id': data['id']}), None)
+        if not obj:
+            db.github.insert(data)
+            print '.'
+        else:
+            print 'Duuuub'
+

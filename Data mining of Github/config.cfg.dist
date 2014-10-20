@@ -5,7 +5,7 @@ host: k-development.dk
 #port: 27017
 database: local
 
-[github]
-user: kknutzen
-password: GithubGithub1
-user-agent: kknutzen/1.0
+[Github]
+user: Kurt
+password: Mandela
+user-agent: KKAwesome/1.0

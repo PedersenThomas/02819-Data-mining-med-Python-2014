@@ -55,3 +55,6 @@ target/
 
 #VS System user options
 *.suo
+
+#configuration file
+/Data mining of Github/config.cfg

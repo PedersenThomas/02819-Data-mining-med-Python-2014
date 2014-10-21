@@ -1,10 +1,17 @@
-# Authers. Kim Knutzen & Thomas Pedersen
+"""Datamining Guthub.
+
+Usage: mine_github <until>
+
+Options: --until  Mines until specified date as 'yyyy-mm-dd'
+  
+"""
 
 import requests
 import json
 from pymongo import MongoClient
 import configuration
-import datetime
+from datetime import datetime
+from docopt import docopt
 
 
 def mine_github_events(cfg):
@@ -19,11 +26,15 @@ def mine_github_events(cfg):
         if not obj:
             db.github.insert(event)
 
+
 def row_exists(id):
     doc = next(db.github.find({'id': id}), None)
     return doc != None
 
+
 if __name__ == '__main__':
+    args = docopt(__doc__)
+    until = datetime.strptime(args["<until>"], "%Y-%m-%d")
     cfg = configuration.Configuration('config.cfg')
     dsn = 'mongodb://{0}:{1}@{2}:{3}/{4}'.format(cfg.db_user, 
                                                  cfg.db_password, 
@@ -32,5 +43,5 @@ if __name__ == '__main__':
                                                  cfg.db_database)
     db = MongoClient(dsn).local
 
-    while datetime.datetime.utcnow() < datetime.datetime(2014, 10, 5):
+    while datetime.utcnow() < until:
         mine_github_events(cfg)

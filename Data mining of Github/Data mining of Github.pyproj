@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>37b368c5-d9e2-46a1-918a-237e54454fa4</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>Data_mining_of_Github.py</StartupFile>
+    <StartupFile>mine_github.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -25,7 +25,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="configuration.py" />
-    <Compile Include="Data_mining_of_Github.py" />
+    <Compile Include="mine_github.py" />
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="{9a7a9026-48c1-4688-9d5d-e5699d47d074}\2.7" />

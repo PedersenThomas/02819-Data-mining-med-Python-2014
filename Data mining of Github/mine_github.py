@@ -43,6 +43,7 @@ def preprocess(dsn):
     # https://groups.google.com/forum/#!topic/mongodb-user/YQGOPZjRtlY
     # http://docs.mongodb.org/manual/tutorial/create-tailable-cursor/
     #
+    cnt = 0
     for event in db.github.find(timeout=False):
         name = event["repo"]["name"]
         type = event["type"]
@@ -63,6 +64,10 @@ def preprocess(dsn):
                 repo["event"][type] = [object_id]
             db.repos.update({'_id': repo["_id"]},
                             {"$set": {"event": repo["event"]}}, upsert=False)
+        cnt += 1
+        if cnt % 1000 == 0:
+            print "Number of events processed: {0}".format(cnt)
+            print "The last object_id was: {0}".format(object_id)
 
 
 if __name__ == '__main__':

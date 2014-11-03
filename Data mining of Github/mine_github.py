@@ -3,6 +3,7 @@
 Usage:
     mine_github mine --until <date>
     mine_github preprocess
+    mine_github proc_user
     mine_github -h | --help
 
 Arguments:
@@ -69,6 +70,49 @@ def preprocess(dsn):
             print "Number of events processed: {0}".format(cnt)
             print "The last object_id was: {0}".format(object_id)
 
+def preprocess_users(dsn):
+    db = MongoClient(dsn).local
+
+    #
+    # How to iterate over large datasets
+    # https://groups.google.com/forum/#!topic/mongodb-user/YQGOPZjRtlY
+    # http://docs.mongodb.org/manual/tutorial/create-tailable-cursor/
+    #
+    cnt = 0
+    for event in db.github.find(timeout=False):
+        name = event["actor"]["login"]
+        id = event["actor"]["id"]
+        reponame = event["repo"]["name"]
+        type = event["type"]
+        object_id = event["_id"]
+
+        # Lookup existing user
+        user = next(db.users.find({'id': id}), None)
+        if not user:
+            # insert user
+            user = {"id": id, "name": name, "repository": [ { "name": reponame, 
+                                                              "events": {type: [object_id]}
+                                                             }]
+                    }
+            db.users.insert(user)
+        else:
+            # Update the existing by appending the event
+            arr = [x for x in user["repository"] if x["name"] == reponame]
+            if arr:
+                if type in arr[0]['events']:
+                    if object_id not in arr[0]['events'][type]:
+                        arr[0]['events'][type].append(object_id)
+                else:
+                    arr[0]['events'][type] = [object_id]
+            else:
+                user["repository"].append({"name": reponame, "events": {type: [object_id]}})
+            db.users.update({'_id': user["_id"]},
+                            {"$set": {"repository": user["repository"]}}, upsert=False)
+        cnt += 1
+        if cnt % 1000 == 0:
+            print "Number of events processed: {0}".format(cnt)
+            print "The last object_id was: {0}".format(object_id)
+
 
 if __name__ == '__main__':
     args = docopt(__doc__)
@@ -88,6 +132,9 @@ if __name__ == '__main__':
 
     elif args["preprocess"]:
         preprocess(dsn)
+
+    elif args["proc_user"]:
+        preprocess_users(dsn)
 
     else:
         print "Command not recognized"

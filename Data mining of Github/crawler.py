@@ -10,6 +10,8 @@ import requests
 import matplotlib.pyplot as plt
 import networkx as nx
 
+import language2color as ltc
+
 def link_to_dict(link):
     links = link.split(", ")
     dict = {}
@@ -103,8 +105,9 @@ def crawl(cfg):
                 if len(shared_users) > 5:
                     G.add_edge(a["full_name"], b["full_name"])
     
-    node_size = [len(repo['contributors']) for repo in repo_visited]
-    nx.draw(G, layout=nx.spring_layout(G), labels=labels, node_size = node_size)
+    node_size = [(len(repo['contributors'])+100)*2 for repo in repo_visited]
+    node_color = [ltc.get_color(repo['language']) for repo in repo_visited]
+    nx.draw(G, layout=nx.spring_layout(G), labels=labels, node_size = node_size, node_color = node_color)
     plt.show()
 
 

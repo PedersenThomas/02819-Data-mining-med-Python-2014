@@ -7,6 +7,8 @@ import Queue
 #from docopt import docopt
 #from pymongo import MongoClient
 import requests
+import matplotlib.pyplot as plt
+import networkx as nx
 
 def link_to_dict(link):
     links = link.split(", ")
@@ -46,37 +48,62 @@ def get_content(cfg, url):
             link = link_to_dict(response.headers['link'])
     return content
 
+def read_repository(user_repo, user_queue, repo_visited):
+    print user_repo["full_name"]
+    # check if repo has already been visited (this check does probaly not work if the repo has changed seen it was seen first)
+    if not (user_repo in repo_visited):
+        repo_visited.append(user_repo)
+        try:
+            contributors = get_content(cfg, user_repo["contributors_url"] + "?per_page=100")
+            user_repo["contributors"] = contributors
+            if len(contributors) >= 10:
+                for contributor in contributors:
+                    user_queue.put(contributor)
+        except LookupError:
+            print "No contributors for repo: " + user_repo["full_name"]
+    else:
+        print "==== Repo already visited ===="
+
+def is_done(user_queue, repo_visited):
+    return user_queue.empty() or len(repo_visited) >= 50
+
 def crawl(cfg):
     user_queue = Queue.Queue()
-    
+    G = nx.Graph()
+
     repo_visited = list()
     repo_visited.append(get_content(cfg, "https://api.github.com/repos/PedersenThomas/02819-Data-mining-med-Python-2014"))
-   
-    for user in get_content(cfg, repo_visited[0]["contributors_url"] + "?per_page=100"):
+    
+    users = get_content(cfg, repo_visited[0]["contributors_url"] + "?per_page=100")
+    repo_visited[0]["contributors"] = users
+    for user in users:
         user_queue.put(user)
     
-    i = 0
-    while not user_queue.empty():
+
+    while not is_done(user_queue, repo_visited):
         user = user_queue.get()
+        print "===== " + user["login"]
         try:
             for user_repo in get_content(cfg, user["subscriptions_url"] + "?per_page=100"):
-                print user_repo["full_name"]
-                # check if repo has already been visited (this check does probaly not work if the repo has changed seen it was seen first)
-                if not (user_repo in repo_visited):
-                    repo_visited.append(user_repo)
-                    try:
-                        for contributor in get_content(cfg, user_repo["contributors_url"] + "?per_page=100"):
-                            user_queue.put(contributor)
-                        print "more contributors added"
-                    except LookupError:
-                        print "No contributors for repo: " + user_repo["full_name"]
-                else:
-                    print "==== Repo already visited ===="
-            i = i + 1
-            print i
+                read_repository(user_repo, user_queue, repo_visited)
         except LookupError:
             print "No subscriptions for user: " + user["login"]
-    print "fin"
+        print "===== " + str(len(repo_visited))
+    G.add_nodes_from([repo["full_name"] for repo in repo_visited])
+    labels = {repo["full_name"]: repo["name"][0] for repo in repo_visited}
+    
+    for a in repo_visited:
+        for b in repo_visited:
+            if a != b:
+                a_users = [user["login"] for user in a["contributors"]]
+                b_users = [user["login"] for user in b["contributors"]]
+                shared_users = set(a_users).intersection(b_users)
+                if len(shared_users) > 1:
+                    G.add_edge(a["full_name"], b["full_name"])
+    
+    nx.draw(G, labels=labels)
+    plt.show()
+
 
 if __name__ == '__main__':
     cfg = configuration.Configuration('config.cfg')

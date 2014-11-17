@@ -65,14 +65,16 @@ def read_repository(user_repo, user_queue, repo_visited):
         print "==== Repo already visited ===="
 
 def is_done(user_queue, repo_visited):
-    return user_queue.empty() or len(repo_visited) >= 50
+    return user_queue.empty() or len(repo_visited) >= 100
 
 def crawl(cfg):
+    start_repo = "https://api.github.com/repos/Microsoft/TypeScript"
+
     user_queue = Queue.Queue()
     G = nx.Graph()
 
     repo_visited = list()
-    repo_visited.append(get_content(cfg, "https://api.github.com/repos/PedersenThomas/02819-Data-mining-med-Python-2014"))
+    repo_visited.append(get_content(cfg, start_repo))
     
     users = get_content(cfg, repo_visited[0]["contributors_url"] + "?per_page=100")
     repo_visited[0]["contributors"] = users
@@ -90,7 +92,7 @@ def crawl(cfg):
             print "No subscriptions for user: " + user["login"]
         print "===== " + str(len(repo_visited))
     G.add_nodes_from([repo["full_name"] for repo in repo_visited])
-    labels = {repo["full_name"]: repo["name"][0] for repo in repo_visited}
+    labels = {repo["full_name"]: repo["name"] for repo in repo_visited}
     
     for a in repo_visited:
         for b in repo_visited:
@@ -98,10 +100,11 @@ def crawl(cfg):
                 a_users = [user["login"] for user in a["contributors"]]
                 b_users = [user["login"] for user in b["contributors"]]
                 shared_users = set(a_users).intersection(b_users)
-                if len(shared_users) > 1:
+                if len(shared_users) > 5:
                     G.add_edge(a["full_name"], b["full_name"])
     
-    nx.draw(G, labels=labels)
+    node_size = [len(repo['contributors']) for repo in repo_visited]
+    nx.draw(G, layout=nx.spring_layout(G), labels=labels, node_size = node_size)
     plt.show()
 
 

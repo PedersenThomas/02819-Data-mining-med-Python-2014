@@ -15,12 +15,13 @@ Options:
 
 """
 
-import requests
-import json
-from pymongo import MongoClient
 import configuration
 from datetime import datetime
+import json
+
 from docopt import docopt
+from pymongo import MongoClient
+import requests
 
 
 def mine_github_events(cfg):
@@ -34,7 +35,6 @@ def mine_github_events(cfg):
         obj = next(db.github.find({'id': event['id']}), None)
         if not obj:
             db.github.insert(event)
-
 
 def preprocess(dsn):
     db = MongoClient(dsn).local

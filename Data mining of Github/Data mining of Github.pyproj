@@ -5,20 +5,21 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>37b368c5-d9e2-46a1-918a-237e54454fa4</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>mine_github.py</StartupFile>
+    <StartupFile>crawler.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <Name>Data mining of Github</Name>
     <RootNamespace>Data mining of Github</RootNamespace>
-    <InterpreterId>{9a7a9026-48c1-4688-9d5d-e5699d47d074}</InterpreterId>
+    <InterpreterId>{26932673-d8e4-438c-a98f-98dd495996ba}</InterpreterId>
     <InterpreterVersion>2.7</InterpreterVersion>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <CommandLineArguments>proc_user</CommandLineArguments>
     <InterpreterPath />
     <InterpreterArguments />
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
+    <IsWindowsApplication>False</IsWindowsApplication>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -30,9 +31,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="configuration.py" />
+    <Compile Include="crawler.py" />
     <Compile Include="mine_github.py" />
   </ItemGroup>
   <ItemGroup>
+    <InterpreterReference Include="{26932673-d8e4-438c-a98f-98dd495996ba}\2.7" />
     <InterpreterReference Include="{9a7a9026-48c1-4688-9d5d-e5699d47d074}\2.7" />
   </ItemGroup>
   <ItemGroup>

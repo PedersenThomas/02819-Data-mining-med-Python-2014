@@ -32,6 +32,7 @@
   <ItemGroup>
     <Compile Include="configuration.py" />
     <Compile Include="crawler.py" />
+    <Compile Include="language2color.py" />
     <Compile Include="mine_github.py" />
   </ItemGroup>
   <ItemGroup>

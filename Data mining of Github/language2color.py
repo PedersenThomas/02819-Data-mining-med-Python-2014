@@ -7,7 +7,7 @@ _colors = {"TypeScript": (49,133,156),
            "Scala": (125,211,176),
            "Ada": (2,248,140),
            "Lua": (250,31,161),
-           "C#": (90,37,162),
+           "C#": (23,134,0),
            "Dart": (204,204,204),
            "C++": (243,75,125),
            "Visual Basic": (148,93,183),
@@ -26,6 +26,8 @@ _colors = {"TypeScript": (49,133,156),
            "OCaml": (59,225,51),
            "Logos": (204,204,204),
            "PowerShell": (204,204,204),
+           "Haskell": (41,181,68),
+           "D": (252,212,109)
           }
 
 def get_color(language):
@@ -34,4 +36,4 @@ def get_color(language):
         return (R/255., G/255., B/255.)
     else:
         print language
-        return (0,0,0)
+        return (1,0,0)

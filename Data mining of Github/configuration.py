@@ -5,7 +5,7 @@ class Configuration(object):
     """description of class"""
 
     def __init__(self, filename):
-        self.config = ConfigParser.ConfigParser({'port': '27017'})
+        self.config = ConfigParser.ConfigParser({'port': '27017', 'save_path': ''})
         self.config.read(filename)
 
     @property
@@ -39,3 +39,11 @@ class Configuration(object):
     @property
     def user_agent(self):
         return self.config.get('Github', 'user-agent')
+
+    @property
+    def graph_save_path(self):
+        return self.config.get('Graph', 'save_path').strip()
+    
+    @property
+    def graph_start_repos(self):
+        return [repo.strip() for repo in self.config.get('Graph', 'start_repos').split(',')]

@@ -5,7 +5,8 @@ class Configuration(object):
     """description of class"""
 
     def __init__(self, filename):
-        self.config = ConfigParser.ConfigParser({'port': '27017', 'save_path': ''})
+        default_values = {'port': '27017', 'save_path': ''}
+        self.config = ConfigParser.ConfigParser(default_values)
         self.config.read(filename)
 
     @property
@@ -43,7 +44,9 @@ class Configuration(object):
     @property
     def graph_save_path(self):
         return self.config.get('Graph', 'save_path').strip()
-    
+
     @property
     def graph_start_repos(self):
-        return [repo.strip() for repo in self.config.get('Graph', 'start_repos').split(',')]
+        return [repo.strip()
+                for repo
+                in self.config.get('Graph', 'start_repos').split(',')]

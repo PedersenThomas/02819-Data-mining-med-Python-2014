@@ -11,7 +11,7 @@ import language2color as ltc
 
 import matplotlib.backends.backend_pdf as pdfs
 
-number_of_repos_to_visit = 500
+number_of_repos_to_visit = 50000
 contributer_limit = 3
 
 requests.adapters.DEFAULT_RETRIES = 5
@@ -92,6 +92,7 @@ def crawl(cfg):
 
     while not is_done(user_queue, repo_visited):
         user = user_queue.get()
+        print len(repo_visited), user['login'], user_queue.qsize()
         try:
             subscriptions_url = user["subscriptions_url"] + "?per_page=100"
             for user_repo in get_content(cfg, subscriptions_url):
@@ -104,6 +105,7 @@ def crawl(cfg):
 
 
 def draw_languages(dirty_repos, save_path):
+    # save_repos_to_file(dirty_repos)
     G = nx.Graph()
     # Clean out repos without a language.
     repos = filter(lambda repo:
@@ -131,36 +133,30 @@ def draw_languages(dirty_repos, save_path):
                     pair = (min(a['language'], b['language']),
                             max(a['language'], b['language']))
                     if pair[0] != pair[1]:
-                        print "edge: ", pair
                         if pair not in connections:
                             connections[pair] = 0
                         connections[pair] += 1
 
-    edge_size = []
-    for conn in connections:
-        G.add_edge(conn[0], conn[1])
-        edge_size.append(connections[conn]*5)
-        print "connection: ", conn[0], conn[1]
+    # for conn in connections:
+    #     G.add_edge(conn[0], conn[1])
 
-    node_size = []
+    G.add_edges_from(connections)
+
+    node_size = calculate_node_sizes(languages)
+    G.add_nodes_from(languages.keys())
+    
     labels = {}
     for lang in languages:
-        G.add_node(lang)
-        labels[lang] = lang
-        node_size.append((len(languages[lang])*20)+20)
+        labels[lang] = "(%d) %s" % (len(languages[lang]), lang)
 
     node_color = [ltc.get_color(lang) for lang in languages]
 
-    highest_contrib_count = max([connections[conn] for conn in connections])
-    max_line_size = 10
-    edgesize = [max_line_size
-                * float(connections[conn])
-                / highest_contrib_count for conn in connections]
-
+    edgesize = calculate_edge_sizes(connections)
+    
+    plt.figure(1,figsize=(20,20))
     nx.draw(G,
             layout=nx.spring_layout(G, iterations=100),
             labels=labels,
-            edge_size=edge_size,
             width=edgesize,
             node_size=node_size,
             node_color=node_color,
@@ -169,15 +165,71 @@ def draw_languages(dirty_repos, save_path):
     epoch = time.time()
     save_path += str(epoch) + "_" + str(number_of_repos_to_visit) + ".pdf"
 
+
     with pdfs.PdfPages(save_path) as pdf:
         pdf.savefig()
 
     plt.show()
 
 
+def calculate_node_sizes(languages, min_size=500, max_size=10000):
+    if not languages:
+        return []
+
+    highest = max([len(languages[lang]) for lang in languages])
+    return [min_size + (max_size - min_size) *
+            float(len(languages[lang])) / highest 
+            for lang in languages]
+
+def calculate_edge_sizes(connections, max_line_size=10):
+    if not connections:
+        return []
+    
+    highest = max([connections[conn] for conn in connections])
+    return [max_line_size
+            * float(connections[conn])
+            / highest for conn in connections]
+
+
+def save_repos_to_file(repos):
+    repo_keys = ["contributors", "language", "fork", "full_name"]
+    con_keys = ["login"]
+
+    clean_repos = []
+    for repo in repos:
+        clean_repo = {}
+        for key in repo:
+            if key == "contributors":
+                clean_contributors = []
+                for contributor in repo[key]:
+                    clean_contributor = {}
+                    for contrib_key in contributor:
+                        if contrib_key in con_keys:
+                            clean_contributor[contrib_key] = contributor[contrib_key]
+                    clean_contributors.append(clean_contributor)
+                clean_repo[key] = clean_contributors
+            elif key in repo_keys:
+                clean_repo[key] = repo[key]
+        clean_repos.append(clean_repo)
+
+    text = json.dumps(clean_repos)
+
+    file = open("newfile.txt", "w")
+
+    file.write(text)
+
+    file.close()
+
+
 if __name__ == '__main__':
     cfg = configuration.Configuration('config.cfg')
     crawl(cfg)
 
+    # file = open("example1.graphdata", "r")
+    # repos = json.load(file)
+    # draw_languages(repos, cfg.graph_save_path)
+
     # print cfg.graph_save_path
     # print cfg.graph_start_repos
+
+

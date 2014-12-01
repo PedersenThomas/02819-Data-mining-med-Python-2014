@@ -41,7 +41,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="config.cfg" />
-    <Content Include="example1.graphdata" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
 </Project>

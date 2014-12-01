@@ -11,7 +11,7 @@ import language2color as ltc
 
 import matplotlib.backends.backend_pdf as pdfs
 
-number_of_repos_to_visit = 50000
+number_of_repos_to_visit = 10000
 contributer_limit = 3
 
 requests.adapters.DEFAULT_RETRIES = 5
@@ -60,6 +60,7 @@ def get_content(cfg, url):
 def read_repository(user_repo, user_queue, repo_visited):
     # check if repo has already been visited
     if not (user_repo in repo_visited):
+        print user_repo['full_name']
         repo_visited.append(user_repo)
         try:
             contributor_url = user_repo["contributors_url"] + "?per_page=100"

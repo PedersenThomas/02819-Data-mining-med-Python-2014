@@ -30,6 +30,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="apriori.py" />
     <Compile Include="configuration.py" />
     <Compile Include="crawler.py" />
     <Compile Include="language2color.py" />

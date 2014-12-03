@@ -30,11 +30,26 @@ def link_to_dict(link):
     return dict
 
 
+def send_get_request_with_retries(url, credentials, cfg, retries = 10, sleep_time = 1):
+    tries = 0
+    while tries <= retries:
+        try:
+            tries += 1
+            return requests.get(url,
+                                headers={'User-Agent': cfg.user_agent},
+                                auth=credentials)
+        except requests.exceptions.ConnectionError:
+            print "Try:", str(tries), "url:", url
+            time.sleep(sleep_time)
+            pass
+
+
 def get_content(cfg, url):
     credentials = requests.auth.HTTPBasicAuth(cfg.git_user, cfg.git_password)
-    response = requests.get(url,
-                            headers={'User-Agent': cfg.user_agent},
-                            auth=credentials)
+    response = send_get_request_with_retries(url, credentials, cfg)
+    #response = requests.get(url,
+    #                        headers={'User-Agent': cfg.user_agent},
+    #                        auth=credentials)
     if response.status_code == 204:
         raise LookupError("page does not contain any content")
     if response.status_code != 200:
@@ -50,19 +65,26 @@ def get_content(cfg, url):
     if 'link' in response.headers:
         link = link_to_dict(response.headers["link"])
         while "next" in link:
-            response = requests.get(link['next'],
-                                    headers={'User-Agent': cfg.user_agent},
-                                    auth=credentials)
+            response = send_get_request_with_retries(link['next'], 
+                                                     credentials, 
+                                                     cfg)
+            # response = requests.get(link['next'],
+            #                         headers={'User-Agent': cfg.user_agent},
+            #                         auth=credentials)
             content = content + json.loads(response.content)
             link = link_to_dict(response.headers['link'])
     return content
 
 
+def is_done(user_queue, repo_visited, limit):
+    return user_queue.empty() or len(repo_visited) >= limit
+
+
 def read_repository(user_repo, user_queue, repo_visited):
     # check if repo has already been visited
-    if not (user_repo in repo_visited):
+    if not (user_repo['id'] in repo_visited):
         print user_repo['full_name']
-        repo_visited.append(user_repo)
+        repo_visited[user_repo['id']] = user_repo
         try:
             contributor_url = user_repo["contributors_url"] + "?per_page=100"
             contributors = get_content(cfg, contributor_url)
@@ -74,18 +96,17 @@ def read_repository(user_repo, user_queue, repo_visited):
             user_repo["contributors"] = []
 
 
-def is_done(user_queue, repo_visited, limit):
-    return user_queue.empty() or len(repo_visited) >= limit
-
-
 def crawl(cfg):
     user_queue = Queue.Queue()
 
-    repo_visited = [get_content(cfg, start_repo)
-                    for start_repo
-                    in cfg.graph_start_repos]
+    repo_visited = {}
+    
+    for start_repo in cfg.graph_start_repos:
+        repo = get_content(cfg, start_repo)
+        repo_visited[repo['id']] = repo
 
-    for repo in repo_visited:
+
+    for repo in repo_visited.values():
         users = get_content(cfg, repo["contributors_url"] + "?per_page=100")
         repo["contributors"] = users
 
@@ -102,8 +123,9 @@ def crawl(cfg):
         except LookupError:
             pass
 
-    non_fork_repos = filter(lambda repo: not repo['fork'], repo_visited)
-    draw_languages(non_fork_repos, cfg)
+    non_fork_repos = filter(lambda repo: not repo['fork'], 
+                            repo_visited.values())
+    return non_fork_repos
 
 
 def draw_languages(dirty_repos, cfg):
@@ -145,7 +167,13 @@ def draw_languages(dirty_repos, cfg):
     G.add_edges_from(connections)
 
     node_size = calculate_node_sizes(languages)
-    G.add_nodes_from(languages.keys())
+    # TEST
+    print languages.keys()
+    print node_size
+    for lang in languages:
+        print "Add node", lang
+        G.add_node(lang)
+    # G.add_nodes_from(languages.keys())
     
     labels = {}
     for lang in languages:
@@ -194,7 +222,7 @@ def calculate_edge_sizes(connections, max_line_size=10):
             / highest for conn in connections]
 
 
-def save_repos_to_file(repos):
+def save_repos_to_file(repos, path):
     repo_keys = ["contributors", "language", "fork", "full_name"]
     con_keys = ["login"]
 
@@ -217,11 +245,15 @@ def save_repos_to_file(repos):
 
     text = json.dumps(clean_repos)
 
-    file = open("newfile.txt", "w")
+    file = open(path, "w")
 
     file.write(text)
 
     file.close()
+
+def load_repos_from_file(path):
+    file = open(path, "r")
+    return json.load(file)
 
 def crawl_users(cfg):
     QUEUE_LIMIT = 1000
@@ -284,7 +316,15 @@ def save_users(users, cfg):
 
 if __name__ == '__main__':
     cfg = configuration.Configuration('config.cfg')
-    #crawl(cfg)
+    # repos = crawl(cfg)
+    
+    # path = "C:\\Users\\Thomas\\Desktop\\lang\\" + str(time.time()) + "_lang.txt"
+    # save_repos_to_file(repos, path)
+    # draw_languages(repos, cfg)
+
+    # load_path = "C:\\Users\\Thomas\\Desktop\\lang\\test1.txt"
+    # repos = load_repos_from_file(load_path)
+    # draw_languages(repos, cfg)
 
     # file = open("example1.graphdata", "r")
     # repos = json.load(file)

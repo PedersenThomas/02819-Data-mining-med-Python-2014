@@ -35,5 +35,4 @@ def get_color(language):
         R, G, B = _colors[language]
         return (R/255., G/255., B/255.)
     else:
-        print language
         return (1,0,0)

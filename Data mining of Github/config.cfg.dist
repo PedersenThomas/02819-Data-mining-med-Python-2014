@@ -12,3 +12,5 @@ user-agent: KKAwesome/1.0
 
 [Graph]
 #save_path: c:\github_languages
+#number_of_repos: 100
+#number_of_users: 100

@@ -12,6 +12,7 @@ import language2color as ltc
 import matplotlib.backends.backend_pdf as pdfs
 
 number_of_repos_to_visit = 10000
+number_of_users_to_visit = 50000
 contributer_limit = 3
 
 requests.adapters.DEFAULT_RETRIES = 5
@@ -73,8 +74,8 @@ def read_repository(user_repo, user_queue, repo_visited):
             user_repo["contributors"] = []
 
 
-def is_done(user_queue, repo_visited):
-    return user_queue.empty() or len(repo_visited) >= number_of_repos_to_visit
+def is_done(user_queue, repo_visited, limit):
+    return user_queue.empty() or len(repo_visited) >= limit
 
 
 def crawl(cfg):
@@ -91,7 +92,7 @@ def crawl(cfg):
         for user in users:
             user_queue.put(user)
 
-    while not is_done(user_queue, repo_visited):
+    while not is_done(user_queue, repo_visited, cfg.graph_number_of_repos):
         user = user_queue.get()
         print len(repo_visited), user['login'], user_queue.qsize()
         try:
@@ -102,10 +103,10 @@ def crawl(cfg):
             pass
 
     non_fork_repos = filter(lambda repo: not repo['fork'], repo_visited)
-    draw_languages(non_fork_repos, cfg.graph_save_path)
+    draw_languages(non_fork_repos, cfg)
 
 
-def draw_languages(dirty_repos, save_path):
+def draw_languages(dirty_repos, cfg):
     # save_repos_to_file(dirty_repos)
     G = nx.Graph()
     # Clean out repos without a language.
@@ -164,7 +165,8 @@ def draw_languages(dirty_repos, save_path):
             linewidths=0.0)
 
     epoch = time.time()
-    save_path += str(epoch) + "_" + str(number_of_repos_to_visit) + ".pdf"
+    save_path = cfg.graph_save_path
+    save_path += str(epoch) + "_" + str(cfg.graph_number_of_repos) + ".pdf"
 
 
     with pdfs.PdfPages(save_path) as pdf:
@@ -221,16 +223,75 @@ def save_repos_to_file(repos):
 
     file.close()
 
+def crawl_users(cfg):
+    QUEUE_LIMIT = 1000
+    user_visited = {}
+    repo_visited = {}
+    user_queue = Queue.Queue()
+
+    # Look at the start repos, and find the users to first look at.
+    for repo in cfg.graph_start_repos:
+        repo_data = get_content(cfg, repo)
+        # Find all contributers and add them to the queue.
+        users = get_content(cfg, repo_data["contributors_url"] + "?per_page=100")
+        for u in users:
+            user_queue.put(u)
+
+    while not is_done(user_queue, user_visited, cfg.graph_number_of_users):
+        user = user_queue.get()
+        if user['id'] in user_visited:
+            continue
+
+        print len(user_visited), user['login'], user_queue.qsize()
+        try:
+            languages = []
+            repos_url = user["repos_url"] + "?per_page=100"
+            for user_repo in get_content(cfg, repos_url):
+                # Fill up the queue.
+                repo_id = user_repo['id']
+                if user_queue.qsize() < QUEUE_LIMIT:
+                    if(repo_id not in repo_visited):
+                        repo_visited[repo_id] = user_repo
+                        users = get_content(cfg, user_repo["contributors_url"] + "?per_page=100")
+                        for u in users:
+                            if u['id'] not in user_visited:
+                                user_queue.put(u)
+
+                #Extract language data.
+                lang = user_repo['language']
+                if lang is not None and lang not in languages:
+                    print lang
+                    languages.append(lang)
+            user_visited[user['id']] = languages
+        except LookupError:
+            pass
+
+    return user_visited
+
+def save_users(users, cfg):
+    langlist = [','.join(langs) for langs in users.values()]
+    text = '\n'.join(langlist)
+
+    epoch = time.time()
+    save_path = cfg.graph_save_path
+    save_path += str(epoch) + "_" + str(cfg.graph_number_of_users) + ".assoc"
+
+    file = open(save_path, "w")
+
+    file.write(text)
+
+    file.close()
 
 if __name__ == '__main__':
     cfg = configuration.Configuration('config.cfg')
-    crawl(cfg)
+    #crawl(cfg)
 
     # file = open("example1.graphdata", "r")
     # repos = json.load(file)
-    # draw_languages(repos, cfg.graph_save_path)
+    # draw_languages(repos, cfg)
 
     # print cfg.graph_save_path
     # print cfg.graph_start_repos
 
-
+    users = crawl_users(cfg)
+    save_users(users, cfg)

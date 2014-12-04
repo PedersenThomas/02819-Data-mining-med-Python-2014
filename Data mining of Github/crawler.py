@@ -13,12 +13,18 @@ import language2color as ltc
 
 import matplotlib.backends.backend_pdf as pdfs
 
+queue_limit = 1000
 contributer_limit = 3
 
 requests.adapters.DEFAULT_RETRIES = 5
 
 
 def link_to_dict(link):
+    """ Web Linking to dictionary
+   
+    Transforms a header Attribute formated as Web Linking (RFC 5988)
+    to a dictionary of Relation-types and link-values
+    """
     links = link.split(", ")
     dict = {}
 
@@ -32,6 +38,7 @@ def link_to_dict(link):
 
 def send_get_request_with_retries(url, credentials, cfg,
                                   retries=10, sleep_time=1):
+    """Sends a HTTP get request and retries if it failes"""
     tries = 0
     while tries <= retries:
         try:
@@ -46,6 +53,14 @@ def send_get_request_with_retries(url, credentials, cfg,
 
 
 def get_content(cfg, url):
+    """Fetches data from Github.com
+
+    Based on the url and the configuration in cfg, does it send a get
+    request with credentials and if the response uses pagination does
+    it follow the links until there are no more.
+    If the request is close to the RateLimit specifyed from Github, 
+    does it wait until the limit resets.
+    """
     credentials = requests.auth.HTTPBasicAuth(cfg.git_user, cfg.git_password)
     response = send_get_request_with_retries(url, credentials, cfg)
     if response.status_code == 204:
@@ -72,26 +87,35 @@ def get_content(cfg, url):
 
 
 def is_done(user_queue, repo_visited, limit):
+    """Checks if the algorithm should stop"""
     return user_queue.empty() or len(repo_visited) >= limit
 
 
-def read_repository(user_repo, user_queue, repo_visited):
-    # check if repo has already been visited
-    if not (user_repo['id'] in repo_visited):
-        print user_repo['full_name']
-        repo_visited[user_repo['id']] = user_repo
+def read_repository(repo, user_queue, repo_visited):
+    """Collects the contributors from a repository
+
+    Extracts the contributors of the repo, and if the number of 
+    contributors are higher than the limit, it then adds them to the
+    user_queue
+    """
+
+    if repo['id'] not in repo_visited:
+        print repo['full_name']
+        repo_visited[repo['id']] = repo
         try:
-            contributor_url = user_repo["contributors_url"] + "?per_page=100"
+            contributor_url = repo["contributors_url"] + "?per_page=100"
             contributors = get_content(cfg, contributor_url)
-            user_repo["contributors"] = contributors
-            if len(contributors) >= contributer_limit:
+            repo["contributors"] = contributors
+            if len(contributors) >= contributer_limit and \
+               user_queue.qsize() <= queue_limit:
                 for contributor in contributors:
                     user_queue.put(contributor)
         except LookupError:
-            user_repo["contributors"] = []
+            repo["contributors"] = []
 
 
 def crawl(cfg):
+    """Crawls Github.com for repositories"""
     user_queue = Queue.Queue()
 
     repo_visited = {}
@@ -154,15 +178,16 @@ def draw_languages(dirty_repos, cfg):
                             connections[pair] = 0
                         connections[pair] += 1
 
-    G.add_edges_from(connections)
-
     node_size = calculate_node_sizes(languages)
     # TEST
     print languages.keys()
     print node_size
+    print connections
     for lang in languages:
         print "Add node", lang
         G.add_node(lang)
+
+    G.add_edges_from(connections)
 
     # Test for following line
     # G.add_nodes_from(languages.keys())
@@ -315,10 +340,10 @@ def save_users(users, cfg):
 
 if __name__ == '__main__':
     cfg = configuration.Configuration('config.cfg')
-    # repos = crawl(cfg)
+    repos = crawl(cfg)
 
-    # path = "C:\\Users\\Thomas\\Desktop\\lang\\" + str(time.time()) + "_lang.txt"
-    # save_repos_to_file(repos, path)
+    path = cfg.graph_save_path + str(time.time()) + "_lang.txt"
+    save_repos_to_file(repos, path)
     # draw_languages(repos, cfg)
 
     # load_path = "C:\\Users\\Thomas\\Desktop\\lang\\test1.txt"
@@ -332,5 +357,5 @@ if __name__ == '__main__':
     # print cfg.graph_save_path
     # print cfg.graph_start_repos
 
-    users = crawl_users(cfg)
-    save_users(users, cfg)
+    # users = crawl_users(cfg)
+    # save_users(users, cfg)

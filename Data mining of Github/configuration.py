@@ -7,7 +7,7 @@ class Configuration(object):
     """description of class"""
 
     def __init__(self, filename):
-        default_values = {'port': '27017', 
+        default_values = {'port': '27017',
                           'save_path': '',
                           'number_of_repos': 100,
                           'number_of_users': 100}

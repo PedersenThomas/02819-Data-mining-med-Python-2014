@@ -13,8 +13,6 @@ import language2color as ltc
 
 import matplotlib.backends.backend_pdf as pdfs
 
-number_of_repos_to_visit = 10000
-number_of_users_to_visit = 50000
 contributer_limit = 3
 
 requests.adapters.DEFAULT_RETRIES = 5
@@ -32,7 +30,8 @@ def link_to_dict(link):
     return dict
 
 
-def send_get_request_with_retries(url, credentials, cfg, retries = 10, sleep_time = 1):
+def send_get_request_with_retries(url, credentials, cfg,
+                                  retries=10, sleep_time=1):
     tries = 0
     while tries <= retries:
         try:
@@ -49,9 +48,6 @@ def send_get_request_with_retries(url, credentials, cfg, retries = 10, sleep_tim
 def get_content(cfg, url):
     credentials = requests.auth.HTTPBasicAuth(cfg.git_user, cfg.git_password)
     response = send_get_request_with_retries(url, credentials, cfg)
-    #response = requests.get(url,
-    #                        headers={'User-Agent': cfg.user_agent},
-    #                        auth=credentials)
     if response.status_code == 204:
         raise LookupError("page does not contain any content")
     if response.status_code != 200:
@@ -67,12 +63,9 @@ def get_content(cfg, url):
     if 'link' in response.headers:
         link = link_to_dict(response.headers["link"])
         while "next" in link:
-            response = send_get_request_with_retries(link['next'], 
-                                                     credentials, 
+            response = send_get_request_with_retries(link['next'],
+                                                     credentials,
                                                      cfg)
-            # response = requests.get(link['next'],
-            #                         headers={'User-Agent': cfg.user_agent},
-            #                         auth=credentials)
             content = content + json.loads(response.content)
             link = link_to_dict(response.headers['link'])
     return content
@@ -102,11 +95,10 @@ def crawl(cfg):
     user_queue = Queue.Queue()
 
     repo_visited = {}
-    
+
     for start_repo in cfg.graph_start_repos:
         repo = get_content(cfg, start_repo)
         repo_visited[repo['id']] = repo
-
 
     for repo in repo_visited.values():
         users = get_content(cfg, repo["contributors_url"] + "?per_page=100")
@@ -125,13 +117,12 @@ def crawl(cfg):
         except LookupError:
             pass
 
-    non_fork_repos = filter(lambda repo: not repo['fork'], 
+    non_fork_repos = filter(lambda repo: not repo['fork'],
                             repo_visited.values())
     return non_fork_repos
 
 
 def draw_languages(dirty_repos, cfg):
-    # save_repos_to_file(dirty_repos)
     G = nx.Graph()
     # Clean out repos without a language.
     repos = filter(lambda repo:
@@ -163,9 +154,6 @@ def draw_languages(dirty_repos, cfg):
                             connections[pair] = 0
                         connections[pair] += 1
 
-    # for conn in connections:
-    #     G.add_edge(conn[0], conn[1])
-
     G.add_edges_from(connections)
 
     node_size = calculate_node_sizes(languages)
@@ -175,8 +163,10 @@ def draw_languages(dirty_repos, cfg):
     for lang in languages:
         print "Add node", lang
         G.add_node(lang)
+
+    # Test for following line
     # G.add_nodes_from(languages.keys())
-    
+
     labels = {}
     for lang in languages:
         labels[lang] = "(%d) %s" % (len(languages[lang]), lang)
@@ -184,8 +174,8 @@ def draw_languages(dirty_repos, cfg):
     node_color = [ltc.get_color(lang) for lang in languages]
 
     edgesize = calculate_edge_sizes(connections)
-    
-    plt.figure(1,figsize=(20,20))
+
+    plt.figure(1, figsize=(20, 20))
     nx.draw(G,
             layout=nx.spring_layout(G, iterations=100),
             labels=labels,
@@ -197,7 +187,6 @@ def draw_languages(dirty_repos, cfg):
     epoch = time.time()
     save_path = cfg.graph_save_path
     save_path += str(epoch) + "_" + str(cfg.graph_number_of_repos) + ".pdf"
-
 
     with pdfs.PdfPages(save_path) as pdf:
         pdf.savefig()
@@ -211,13 +200,14 @@ def calculate_node_sizes(languages, min_size=500, max_size=10000):
 
     highest = max([len(languages[lang]) for lang in languages])
     return [min_size + (max_size - min_size) *
-            float(len(languages[lang])) / highest 
+            float(len(languages[lang])) / highest
             for lang in languages]
+
 
 def calculate_edge_sizes(connections, max_line_size=10):
     if not connections:
         return []
-    
+
     highest = max([connections[conn] for conn in connections])
     return [max_line_size
             * float(connections[conn])
@@ -238,7 +228,8 @@ def save_repos_to_file(repos, path):
                     clean_contributor = {}
                     for contrib_key in contributor:
                         if contrib_key in con_keys:
-                            clean_contributor[contrib_key] = contributor[contrib_key]
+                            clean_contributor[contrib_key] = \
+                                contributor[contrib_key]
                     clean_contributors.append(clean_contributor)
                 clean_repo[key] = clean_contributors
             elif key in repo_keys:
@@ -253,9 +244,11 @@ def save_repos_to_file(repos, path):
 
     file.close()
 
+
 def load_repos_from_file(path):
     file = open(path, "r")
     return json.load(file)
+
 
 def crawl_users(cfg):
     QUEUE_LIMIT = 1000
@@ -267,7 +260,8 @@ def crawl_users(cfg):
     for repo in cfg.graph_start_repos:
         repo_data = get_content(cfg, repo)
         # Find all contributers and add them to the queue.
-        users = get_content(cfg, repo_data["contributors_url"] + "?per_page=100")
+        users = get_content(cfg,
+                            repo_data["contributors_url"] + "?per_page=100")
         for u in users:
             user_queue.put(u)
 
@@ -286,12 +280,13 @@ def crawl_users(cfg):
                 if user_queue.qsize() < QUEUE_LIMIT:
                     if(repo_id not in repo_visited):
                         repo_visited[repo_id] = user_repo
-                        users = get_content(cfg, user_repo["contributors_url"] + "?per_page=100")
+                        url = user_repo["contributors_url"] + "?per_page=100"
+                        users = get_content(cfg, url)
                         for u in users:
                             if u['id'] not in user_visited:
                                 user_queue.put(u)
 
-                #Extract language data.
+                # Extract language data.
                 lang = user_repo['language']
                 if lang is not None and lang not in languages:
                     print lang
@@ -301,6 +296,7 @@ def crawl_users(cfg):
             pass
 
     return user_visited
+
 
 def save_users(users, cfg):
     langlist = [','.join(langs) for langs in users.values()]
@@ -316,10 +312,11 @@ def save_users(users, cfg):
 
     file.close()
 
+
 if __name__ == '__main__':
     cfg = configuration.Configuration('config.cfg')
     # repos = crawl(cfg)
-    
+
     # path = "C:\\Users\\Thomas\\Desktop\\lang\\" + str(time.time()) + "_lang.txt"
     # save_repos_to_file(repos, path)
     # draw_languages(repos, cfg)

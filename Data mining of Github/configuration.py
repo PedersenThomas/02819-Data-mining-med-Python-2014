@@ -7,32 +7,11 @@ class Configuration(object):
     """description of class"""
 
     def __init__(self, filename):
-        default_values = {'port': '27017',
-                          'save_path': '',
+        default_values = {'save_path': '',
                           'number_of_repos': 100,
                           'number_of_users': 100}
         self.config = ConfigParser.ConfigParser(default_values)
         self.config.read(filename)
-
-    @property
-    def db_user(self):
-        return self.config.get('Database', 'user')
-
-    @property
-    def db_password(self):
-        return self.config.get('Database', 'password')
-
-    @property
-    def db_host(self):
-        return self.config.get('Database', 'host')
-
-    @property
-    def db_port(self):
-        return self.config.get('Database', 'port')
-
-    @property
-    def db_database(self):
-        return self.config.get('Database', 'database')
 
     @property
     def git_user(self):

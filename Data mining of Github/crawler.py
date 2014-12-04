@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import configuration
 import json
 import time

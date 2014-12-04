@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 _colors = {"TypeScript": (49,133,156),
            "JavaScript": (241,224,90),
            "C": (85,85,85),

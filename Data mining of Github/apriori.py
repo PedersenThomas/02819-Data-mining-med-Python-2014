@@ -15,7 +15,7 @@ def run_apriori(minsup = 80,
     The output of this function is written in two files, one for 
     frequent itemsets and one file for association rules.
 
-    Parameters:
+    Keyword arguments:
         minsup = 80, Minimum support of itemsets as a procentage.
         minconf = 100, Minimum confidence of a rule as a procentage.
         maxrule = 4, Maximum number of items per item set/association rule.

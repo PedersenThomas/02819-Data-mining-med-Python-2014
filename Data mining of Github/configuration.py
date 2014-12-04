@@ -4,7 +4,7 @@ import ConfigParser
 
 
 class Configuration(object):
-    """description of class"""
+    """Configuration to Github mining"""
 
     def __init__(self, filename):
         default_values = {'save_path': '',

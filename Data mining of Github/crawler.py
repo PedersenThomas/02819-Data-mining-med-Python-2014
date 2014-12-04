@@ -1,19 +1,22 @@
 # -*- coding: utf-8 -*-
 
+"""Datamining Guthub.
+
+"""
+
 import configuration
 import json
-import time
 import Queue
+import time
 
-import requests
+import matplotlib.backends.backend_pdf as pdfs
 import matplotlib.pyplot as plt
 import networkx as nx
+import requests
 
 import language2color as ltc
 
-import matplotlib.backends.backend_pdf as pdfs
 
-queue_limit = 1000
 contributer_limit = 3
 
 requests.adapters.DEFAULT_RETRIES = 5
@@ -26,14 +29,14 @@ def link_to_dict(link):
     to a dictionary of Relation-types and link-values
     """
     links = link.split(", ")
-    dict = {}
+    rel = {}
 
     for l in links:
         link_last_idx = l.index(">")
         rel_idx = l.index("rel=") + 5
-        dict[l[rel_idx:-1]] = l[1:link_last_idx]
+        rel[l[rel_idx:-1]] = l[1:link_last_idx]
 
-    return dict
+    return rel
 
 
 def send_get_request_with_retries(url, credentials, cfg,
@@ -91,7 +94,8 @@ def is_done(user_queue, repo_visited, limit):
     return user_queue.empty() or len(repo_visited) >= limit
 
 
-def read_repository(repo, user_queue, repo_visited):
+def read_repository(repo, user_queue, repo_visited, 
+                    queue_limit = 1000):
     """Collects the contributors from a repository
 
     Extracts the contributors of the repo, and if the number of 
@@ -147,6 +151,12 @@ def crawl(cfg):
 
 
 def draw_languages(dirty_repos, cfg):
+    """Darws programming languages based on the data from the repos
+
+    Draws a graph where the vertices are languages and the edges
+    represent contributers that work in different projects of
+    different languages
+    """
     G = nx.Graph()
     # Clean out repos without a language.
     repos = filter(lambda repo:
@@ -220,6 +230,7 @@ def draw_languages(dirty_repos, cfg):
 
 
 def calculate_node_sizes(languages, min_size=500, max_size=10000):
+    """Calculates the size of the verices of the graph."""
     if not languages:
         return []
 
@@ -230,6 +241,7 @@ def calculate_node_sizes(languages, min_size=500, max_size=10000):
 
 
 def calculate_edge_sizes(connections, max_line_size=10):
+    """Calculates the thickness of the edges"""
     if not connections:
         return []
 
@@ -275,8 +287,11 @@ def load_repos_from_file(path):
     return json.load(file)
 
 
-def crawl_users(cfg):
-    QUEUE_LIMIT = 1000
+def crawl_users(cfg, queue_limit = 1000):
+    """Crawls Github.com for data about users projects languages
+    
+    The functions crawls though Github.com and looks at peoples 
+    repos languages"""
     user_visited = {}
     repo_visited = {}
     user_queue = Queue.Queue()
@@ -302,7 +317,7 @@ def crawl_users(cfg):
             for user_repo in get_content(cfg, repos_url):
                 # Fill up the queue.
                 repo_id = user_repo['id']
-                if user_queue.qsize() < QUEUE_LIMIT:
+                if user_queue.qsize() < queue_limit:
                     if(repo_id not in repo_visited):
                         repo_visited[repo_id] = user_repo
                         url = user_repo["contributors_url"] + "?per_page=100"

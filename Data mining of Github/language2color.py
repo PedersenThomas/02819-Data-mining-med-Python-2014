@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+"""Get a languages' color."""
+
 _colors = {"TypeScript": (49, 133, 156),
            "JavaScript": (241, 224, 90),
            "C": (85, 85, 85),
@@ -34,6 +36,7 @@ _colors = {"TypeScript": (49, 133, 156),
 
 
 def get_color(language):
+    """Get a languages' color."""
     if language in _colors:
         R, G, B = _colors[language]
         return (R/255., G/255., B/255.)

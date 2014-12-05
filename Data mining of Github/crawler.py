@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Datamining Guthub.
-
-"""
+"""Datamining Guthub."""
 
 import configuration
 import json
@@ -23,7 +21,7 @@ requests.adapters.DEFAULT_RETRIES = 5
 
 
 def link_to_dict(link):
-    """ Web Linking to dictionary
+    """ Web Linking to dictionary.
    
     Transforms a header Attribute formated as Web Linking (RFC 5988)
     to a dictionary of Relation-types and link-values
@@ -41,7 +39,7 @@ def link_to_dict(link):
 
 def send_get_request_with_retries(url, credentials, cfg,
                                   retries=10, sleep_time=1):
-    """Sends a HTTP get request and retries if it failes"""
+    """Send a HTTP get request and retries if it failes."""
     tries = 0
     while tries <= retries:
         try:
@@ -56,7 +54,7 @@ def send_get_request_with_retries(url, credentials, cfg,
 
 
 def get_content(cfg, url):
-    """Fetches data from Github.com
+    """Fetch data from Github.com.
 
     Based on the url and the configuration in cfg, does it send a get
     request with credentials and if the response uses pagination does
@@ -71,7 +69,7 @@ def get_content(cfg, url):
     if response.status_code != 200:
         raise LookupError("Page returned an error.")
     if int(response.headers["X-RateLimit-Remaining"]) < 20:
-        # Wait
+        # Wait for the reset
         current_time = time.time()
         reset_time = int(response.headers["X-RateLimit-Reset"])
         time.sleep(reset_time - current_time)
@@ -90,19 +88,18 @@ def get_content(cfg, url):
 
 
 def is_done(user_queue, repo_visited, limit):
-    """Checks if the algorithm should stop"""
+    """Check if the algorithm should stop."""
     return user_queue.empty() or len(repo_visited) >= limit
 
 
 def read_repository(repo, user_queue, repo_visited, 
                     queue_limit = 1000):
-    """Collects the contributors from a repository
+    """Collect the contributors from a repository.
 
     Extracts the contributors of the repo, and if the number of 
     contributors are higher than the limit, it then adds them to the
     user_queue
     """
-
     if repo['id'] not in repo_visited:
         print repo['full_name']
         repo_visited[repo['id']] = repo
@@ -119,7 +116,7 @@ def read_repository(repo, user_queue, repo_visited,
 
 
 def crawl(cfg):
-    """Crawls Github.com for repositories"""
+    """Crawl Github.com for repositories."""
     user_queue = Queue.Queue()
 
     repo_visited = {}
@@ -151,7 +148,7 @@ def crawl(cfg):
 
 
 def draw_languages(dirty_repos, cfg):
-    """Darws programming languages based on the data from the repos
+    """Darw programming languages based on the data from the repos.
 
     Draws a graph where the vertices are languages and the edges
     represent contributers that work in different projects of
@@ -230,7 +227,7 @@ def draw_languages(dirty_repos, cfg):
 
 
 def calculate_node_sizes(languages, min_size=500, max_size=10000):
-    """Calculates the size of the verices of the graph."""
+    """Calculate the size of the verices of the graph."""
     if not languages:
         return []
 
@@ -241,7 +238,7 @@ def calculate_node_sizes(languages, min_size=500, max_size=10000):
 
 
 def calculate_edge_sizes(connections, max_line_size=10):
-    """Calculates the thickness of the edges"""
+    """Calculate the thickness of the edges."""
     if not connections:
         return []
 
@@ -288,10 +285,11 @@ def load_repos_from_file(path):
 
 
 def crawl_users(cfg, queue_limit = 1000):
-    """Crawls Github.com for data about users projects languages
+    """Crawl Github.com for data about users projects languages.
     
     The functions crawls though Github.com and looks at peoples 
-    repos languages"""
+    repos languages
+    """
     user_visited = {}
     repo_visited = {}
     user_queue = Queue.Queue()
@@ -357,7 +355,7 @@ if __name__ == '__main__':
     cfg = configuration.Configuration('config.cfg')
     repos = crawl(cfg)
 
-    path = cfg.graph_save_path + str(time.time()) + "_lang.txt"
+    path = cfg.graph_save_path + str(time.time()) + "_" + str(cfg.graph_number_of_repos) + "_lang.txt"
     save_repos_to_file(repos, path)
     # draw_languages(repos, cfg)
 

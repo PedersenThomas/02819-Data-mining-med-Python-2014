@@ -62,7 +62,6 @@ def send_get_request_with_retries(url, credentials, cfg,
                                 headers={'User-Agent': cfg.user_agent},
                                 auth=credentials)
         except requests.exceptions.ConnectionError:
-            print "Try:", str(tries), "url:", url
             time.sleep(sleep_time)
             pass
 
@@ -298,7 +297,6 @@ def crawl_users(cfg, queue_limit=1000):
                 # Extract language data.
                 lang = user_repo['language']
                 if lang is not None and lang not in languages:
-                    print lang
                     languages.append(lang)
             user_visited[user['id']] = languages
         except LookupError:

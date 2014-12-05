@@ -65,6 +65,7 @@ def send_get_request_with_retries(url, credentials, cfg,
             time.sleep(sleep_time)
             pass
 
+    raise requests.exceptions.ConnectionError
 
 def get_content(cfg, url):
     """Fetch data from Github.com.

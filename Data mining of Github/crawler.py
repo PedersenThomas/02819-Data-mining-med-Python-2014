@@ -112,8 +112,9 @@ def read_repository(repo, user_queue, repo_visited,
     """Collect the contributors from a repository.
 
     Extracts the contributors of the repo, and if the number of
-    contributors are higher than the limit, it then adds them to the
-    user_queue
+    contributors are higher than the contributor limit and the
+    user_queue hasn't reach its limit, the users are then added
+    to the user_queue
     """
     if repo['id'] not in repo_visited:
         print repo['full_name']

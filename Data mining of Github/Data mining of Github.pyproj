@@ -34,6 +34,7 @@
     <Compile Include="configuration.py" />
     <Compile Include="crawler.py" />
     <Compile Include="language2color.py" />
+    <Compile Include="test_crawler.py" />
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="{26932673-d8e4-438c-a98f-98dd495996ba}\2.7" />

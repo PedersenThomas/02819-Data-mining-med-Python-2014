@@ -1,6 +1,16 @@
 # -*- coding: utf-8 -*-
 
-"""Datamining Guthub.
+"""Datamining Guthub.com.
+
+Usage:
+    crawler -l | --language_mine
+    crawler -a | --association_mine
+    crawler -h | --help
+
+Options:
+    -h --help              Displays this help message
+    -l --language_mine     Mines Github.com for repos to grenerate a graph
+    -a --association_mine  Mines Github.com for users to association
 
 """
 
@@ -9,12 +19,14 @@ import json
 import Queue
 import time
 
+from docopt import docopt
 import matplotlib.backends.backend_pdf as pdfs
 import matplotlib.pyplot as plt
 import networkx as nx
 import requests
 
 import language2color as ltc
+from apriori import run_apriori
 
 
 contributer_limit = 3
@@ -23,8 +35,8 @@ requests.adapters.DEFAULT_RETRIES = 5
 
 
 def link_to_dict(link):
-    """ Web Linking to dictionary
-   
+    """ Web Linking to dictionary.
+
     Transforms a header Attribute formated as Web Linking (RFC 5988)
     to a dictionary of Relation-types and link-values
     """
@@ -41,7 +53,7 @@ def link_to_dict(link):
 
 def send_get_request_with_retries(url, credentials, cfg,
                                   retries=10, sleep_time=1):
-    """Sends a HTTP get request and retries if it failes"""
+    """Send a HTTP get request and retries if it failes."""
     tries = 0
     while tries <= retries:
         try:
@@ -57,12 +69,12 @@ def send_get_request_with_retries(url, credentials, cfg,
     raise requests.exceptions.ConnectionError
 
 def get_content(cfg, url):
-    """Fetches data from Github.com
+    """Fetch data from Github.com.
 
     Based on the url and the configuration in cfg, does it send a get
     request with credentials and if the response uses pagination does
     it follow the links until there are no more.
-    If the request is close to the RateLimit specifyed from Github, 
+    If the request is close to the RateLimit specifyed from Github,
     does it wait until the limit resets.
     """
     credentials = requests.auth.HTTPBasicAuth(cfg.git_user, cfg.git_password)
@@ -72,7 +84,7 @@ def get_content(cfg, url):
     if response.status_code != 200:
         raise LookupError("Page returned an error.")
     if int(response.headers["X-RateLimit-Remaining"]) < 20:
-        # Wait
+        # Wait for the reset
         current_time = time.time()
         reset_time = int(response.headers["X-RateLimit-Reset"])
         time.sleep(reset_time - current_time)
@@ -91,19 +103,18 @@ def get_content(cfg, url):
 
 
 def is_done(user_queue, repo_visited, limit):
-    """Checks if the algorithm should stop"""
+    """Check if the algorithm should stop."""
     return user_queue.empty() or len(repo_visited) >= limit
 
 
-def read_repository(repo, user_queue, repo_visited, 
-                    queue_limit = 1000):
-    """Collects the contributors from a repository
+def read_repository(repo, user_queue, repo_visited,
+                    queue_limit=1000):
+    """Collect the contributors from a repository.
 
-    Extracts the contributors of the repo, and if the number of 
+    Extracts the contributors of the repo, and if the number of
     contributors are higher than the limit, it then adds them to the
     user_queue
     """
-
     if repo['id'] not in repo_visited:
         print repo['full_name']
         repo_visited[repo['id']] = repo
@@ -120,7 +131,7 @@ def read_repository(repo, user_queue, repo_visited,
 
 
 def crawl(cfg):
-    """Crawls Github.com for repositories"""
+    """Crawl Github.com for repositories."""
     user_queue = Queue.Queue()
 
     repo_visited = {}
@@ -152,7 +163,7 @@ def crawl(cfg):
 
 
 def draw_languages(dirty_repos, cfg):
-    """Darws programming languages based on the data from the repos
+    """Darw programming languages based on the data from the repos.
 
     Draws a graph where the vertices are languages and the edges
     represent contributers that work in different projects of
@@ -190,18 +201,9 @@ def draw_languages(dirty_repos, cfg):
                         connections[pair] += 1
 
     node_size = calculate_node_sizes(languages)
-    # TEST
-    print languages.keys()
-    print node_size
-    print connections
-    for lang in languages:
-        print "Add node", lang
-        G.add_node(lang)
 
+    G.add_nodes_from(languages.keys())
     G.add_edges_from(connections)
-
-    # Test for following line
-    # G.add_nodes_from(languages.keys())
 
     labels = {}
     for lang in languages:
@@ -231,7 +233,7 @@ def draw_languages(dirty_repos, cfg):
 
 
 def calculate_node_sizes(languages, min_size=500, max_size=10000):
-    """Calculates the size of the verices of the graph."""
+    """Calculate the size of the verices of the graph."""
     if not languages:
         return []
 
@@ -242,7 +244,7 @@ def calculate_node_sizes(languages, min_size=500, max_size=10000):
 
 
 def calculate_edge_sizes(connections, max_line_size=10):
-    """Calculates the thickness of the edges"""
+    """Calculate the thickness of the edges."""
     if not connections:
         return []
 
@@ -252,47 +254,12 @@ def calculate_edge_sizes(connections, max_line_size=10):
             / highest for conn in connections]
 
 
-def save_repos_to_file(repos, path):
-    repo_keys = ["contributors", "language", "fork", "full_name"]
-    con_keys = ["login"]
+def crawl_users(cfg, queue_limit=1000):
+    """Crawl Github.com for data about users projects languages.
 
-    clean_repos = []
-    for repo in repos:
-        clean_repo = {}
-        for key in repo:
-            if key == "contributors":
-                clean_contributors = []
-                for contributor in repo[key]:
-                    clean_contributor = {}
-                    for contrib_key in contributor:
-                        if contrib_key in con_keys:
-                            clean_contributor[contrib_key] = \
-                                contributor[contrib_key]
-                    clean_contributors.append(clean_contributor)
-                clean_repo[key] = clean_contributors
-            elif key in repo_keys:
-                clean_repo[key] = repo[key]
-        clean_repos.append(clean_repo)
-
-    text = json.dumps(clean_repos)
-
-    file = open(path, "w")
-
-    file.write(text)
-
-    file.close()
-
-
-def load_repos_from_file(path):
-    file = open(path, "r")
-    return json.load(file)
-
-
-def crawl_users(cfg, queue_limit = 1000):
-    """Crawls Github.com for data about users projects languages
-    
-    The functions crawls though Github.com and looks at peoples 
-    repos languages"""
+    The functions crawls though Github.com and looks at peoples
+    repos languages
+    """
     user_visited = {}
     repo_visited = {}
     user_queue = Queue.Queue()
@@ -339,39 +306,29 @@ def crawl_users(cfg, queue_limit = 1000):
     return user_visited
 
 
-def save_users(users, cfg):
+def save_users(users, filename):
+    """Save the users to a file for association rules."""
     langlist = [','.join(langs) for langs in users.values()]
     text = '\n'.join(langlist)
 
-    epoch = time.time()
-    save_path = cfg.graph_save_path
-    save_path += str(epoch) + "_" + str(cfg.graph_number_of_users) + ".assoc"
-
-    file = open(save_path, "w")
-
+    file = open(filename, "w")
     file.write(text)
-
     file.close()
 
 
 if __name__ == '__main__':
     cfg = configuration.Configuration('config.cfg')
-    repos = crawl(cfg)
 
-    path = cfg.graph_save_path + str(time.time()) + "_lang.txt"
-    save_repos_to_file(repos, path)
-    # draw_languages(repos, cfg)
-
-    # load_path = "C:\\Users\\Thomas\\Desktop\\lang\\test1.txt"
-    # repos = load_repos_from_file(load_path)
-    # draw_languages(repos, cfg)
-
-    # file = open("example1.graphdata", "r")
-    # repos = json.load(file)
-    # draw_languages(repos, cfg)
-
-    # print cfg.graph_save_path
-    # print cfg.graph_start_repos
-
-    # users = crawl_users(cfg)
-    # save_users(users, cfg)
+    args = docopt(__doc__)
+    if args['--association_mine']:
+        users = crawl_users(cfg)
+        user_filename = 'users.assoc'
+        save_users(users, user_filename)
+        output_file_items = cfg.graph_save_path + 'apriori_items.txt'
+        output_file_rules = cfg.graph_save_path + 'apriori_rules.txt'
+        run_apriori(input_file=user_filename,
+                    output_file_items=output_file_items,
+                    output_file_rules=output_file_rules)
+    elif args['--language_mine']:
+        repos = crawl(cfg)
+        draw_languages(repos, cfg)

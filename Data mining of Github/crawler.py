@@ -4,13 +4,19 @@
 
 Usage:
     crawler -l | --language_mine
-    crawler -a | --association_mine
+    crawler -a | --association_mine [--conf=<confidence>] [--sup=<suport>]
     crawler -h | --help
+
+Arguments:
+    <confidence>           Confidence precentage
+    <suport>               Support precentage
 
 Options:
     -h --help              Displays this help message
     -l --language_mine     Mines Github.com for repos to grenerate a graph
     -a --association_mine  Mines Github.com for users to association
+    --conf=<confidence>    Minimum Confidence [default: 80]
+    --sup=<suport>         Minimum Support [default: 50]
 
 """
 
@@ -66,6 +72,7 @@ def send_get_request_with_retries(url, credentials, cfg,
             pass
 
     raise requests.exceptions.ConnectionError
+
 
 def get_content(cfg, url):
     """Fetch data from Github.com.
@@ -319,12 +326,17 @@ if __name__ == '__main__':
 
     args = docopt(__doc__)
     if args['--association_mine']:
+        min_conf = args['--conf']
+        min_sup = args['--sup']
+
         users = crawl_users(cfg)
         user_filename = 'users.assoc'
         save_users(users, user_filename)
         output_file_items = cfg.graph_save_path + 'apriori_items.txt'
         output_file_rules = cfg.graph_save_path + 'apriori_rules.txt'
-        run_apriori(input_file=user_filename,
+        run_apriori(minsup=min_sup,
+                    minconf=min_conf,
+                    input_file=user_filename,
                     output_file_items=output_file_items,
                     output_file_rules=output_file_rules)
     elif args['--language_mine']:

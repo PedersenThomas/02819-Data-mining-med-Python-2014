@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+
+"""Wrap apriori.exe which makes association rule."""
+
 from subprocess import call
 
 # Run Apriori Algorithm
@@ -7,14 +11,13 @@ def run_apriori(minsup = 80,
                 input_file = 'apriori_file.txt', 
                 output_file_items='apriori_items.txt', 
                 output_file_rules='apriori_rules.txt'):
-
-    """ 
-    Execute association rule mining, using the apriori algorithm
-    implemented by Christian Borgelt, (http://www.borgelt.net/apriori.html)
-
+    """Execute association rule mining, using the apriori algorithm.
+    
     The output of this function is written in two files, one for 
     frequent itemsets and one file for association rules.
-
+    
+    apriori is implemented by Christian Borgelt, 
+    (http://www.borgelt.net/apriori.html)
     Keyword arguments:
         minsup = 80, Minimum support of itemsets as a procentage.
         minconf = 100, Minimum confidence of a rule as a procentage.
@@ -24,7 +27,6 @@ def run_apriori(minsup = 80,
         output_file_items = 'apriori_items.txt' output path for itemsets.
         output_file_rules = 'apriori_rules.txt' output path for assoc. rules.
     """
-
     status1 = call('apriori.exe -f"," \
                                 -s{0} \
                                 -v"[Sup. %0S]" {1} {2}'

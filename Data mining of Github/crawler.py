@@ -207,22 +207,26 @@ def draw_languages(dirty_repos, cfg):
                             connections[pair] = 0
                         connections[pair] += 1
 
-    node_size = calculate_node_sizes(languages)
-
     G.add_nodes_from(languages.keys())
+
     G.add_edges_from(connections)
 
     labels = {}
     for lang in languages:
         labels[lang] = "(%d) %s" % (len(languages[lang]), lang)
 
-    node_color = [ltc.get_color(lang) for lang in languages]
+    node_size = calculate_node_sizes([languages[node] for node in G])
 
-    edgesize = calculate_edge_sizes(connections)
+    node_color = [ltc.get_color(node) for node in G]
+
+    edgesize = calculate_edge_sizes([connections[(min(a, b),
+                                                  max(a, b))]
+                                     for (a, b)
+                                     in G.edges_iter()])
 
     plt.figure(1, figsize=(20, 20))
     nx.draw(G,
-            layout=nx.spring_layout(G, iterations=100),
+            pos=nx.spring_layout(G, iterations=100),
             labels=labels,
             width=edgesize,
             node_size=node_size,
@@ -244,9 +248,9 @@ def calculate_node_sizes(languages, min_size=500, max_size=10000):
     if not languages:
         return []
 
-    highest = max([len(languages[lang]) for lang in languages])
+    highest = max(len(lang) for lang in languages)
     return [min_size + (max_size - min_size) *
-            float(len(languages[lang])) / highest
+            float(len(lang)) / highest
             for lang in languages]
 
 
@@ -255,9 +259,9 @@ def calculate_edge_sizes(connections, max_line_size=10):
     if not connections:
         return []
 
-    highest = max([connections[conn] for conn in connections])
+    highest = max(connections)
     return [max_line_size
-            * float(connections[conn])
+            * float(conn)
             / highest for conn in connections]
 
 

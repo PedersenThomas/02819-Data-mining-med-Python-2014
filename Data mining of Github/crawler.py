@@ -1,12 +1,24 @@
 # -*- coding: utf-8 -*-
 
-"""Datamining Guthub."""
+"""Datamining Guthub.com.
+
+Usage:
+    crawler -l | --language_mine
+    crawler -a | --association_mine
+    crawler -h | --help
+    
+Options:
+    -h --help Displays this help message
+    -l --language_mine  Mines Github.com for repos to grenerate a graph
+    -a --association_mine Mines Github.com for users to association
+"""
 
 import configuration
 import json
 import Queue
 import time
 
+from docopt import docopt
 import matplotlib.backends.backend_pdf as pdfs
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -353,10 +365,15 @@ def save_users(users, cfg):
 
 if __name__ == '__main__':
     cfg = configuration.Configuration('config.cfg')
-    repos = crawl(cfg)
 
-    path = cfg.graph_save_path + str(time.time()) + "_" + str(cfg.graph_number_of_repos) + "_lang.txt"
-    save_repos_to_file(repos, path)
+    
+    args = docopt(__doc__)
+    if args['-a']:
+        print '-a'
+    # repos = crawl(cfg)
+
+    # path = cfg.graph_save_path + str(time.time()) + "_" + str(cfg.graph_number_of_repos) + "_lang.txt"
+    # save_repos_to_file(repos, path)
     # draw_languages(repos, cfg)
 
     # load_path = "C:\\Users\\Thomas\\Desktop\\lang\\test1.txt"
